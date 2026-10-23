@@ -17,10 +17,11 @@
 html,body{margin:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:96px;min-height:100vh}
 button{font:inherit;cursor:pointer;border:0;color:inherit}
-.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+.wrap{max-width:760px;margin:0 auto;padding:0 max(20px,env(safe-area-inset-left)) 0 max(20px,env(safe-area-inset-right))}
+@media(max-width:560px){.hd-r{margin-left:auto}}
 header{position:sticky;top:0;z-index:20;background:rgba(246,244,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0}
-.clock{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1}
+.hd{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 12px;padding:calc(16px + env(safe-area-inset-top)) 0 14px}
+.clock{font-size:clamp(26px,7vw,34px);font-weight:800;letter-spacing:-1px;line-height:1.1;white-space:nowrap}
 .date{color:var(--mute);font-size:13px;margin-top:3px;font-weight:600}
 .hd-r{display:flex;gap:6px;align-items:center}
 .pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 11px;font-weight:700;font-size:14px;box-shadow:var(--shadow)}
@@ -32,7 +33,7 @@ header{position:sticky;top:0;z-index:20;background:rgba(246,244,255,.92);backdro
 @keyframes pulse{50%{opacity:.3}}
 h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:26px 2px 10px}
 .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
-.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
 .sum div{padding:10px 4px;border-radius:16px;background:var(--bg)}
 .sum b{display:block;font-size:26px;font-weight:800}
 .sum span{font-size:11px;color:var(--mute);font-weight:700}
@@ -45,7 +46,8 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .tile:active{transform:scale(.97)}
 .tile.t0{background:linear-gradient(160deg,#fff,var(--b1s));border:2px solid #cdd8ff}
 .tile.t1{background:linear-gradient(160deg,#fff,var(--b2s));border:2px solid #ffd0db}
-.avatar{width:72px;height:72px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;font-size:38px;color:#fff}
+.avatar{width:72px;height:72px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;font-size:38px;color:#fff;overflow:hidden}
+.avatar svg{width:92%;height:92%;display:block;margin-top:6%}
 .t0 .avatar{background:var(--b1)}.t1 .avatar{background:var(--b2)}
 .tile h3{margin:0;font-size:22px}
 .tile .mini{margin-top:8px;font-size:13px;color:var(--mute);font-weight:700;line-height:1.6}
@@ -60,7 +62,7 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .bb:active{transform:scale(.95)}
 .bb .em{font-size:40px}
 .bb small{font-weight:700;opacity:.9;font-size:13px}
-.bb.feed{background:var(--feed)}.bb.pee{background:var(--pee)}.bb.poop{background:var(--poop)}.bb.nap{background:var(--nap)}
+.bb.feed{background:var(--feed);grid-column:1/-1}.bb.poop{background:var(--poop)}.bb.nap{background:var(--nap)}
 .bb.nap.run{background:#5b3fd6;animation:glow 2s infinite}
 @keyframes glow{50%{box-shadow:0 0 0 8px rgba(139,108,240,.25)}}
 .next{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
@@ -70,7 +72,9 @@ h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute
 .daynav{display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px}
 .daynav button{background:var(--card);border:1px solid var(--line);border-radius:12px;width:42px;height:38px;font-size:18px;font-weight:800}
 .daynav button:disabled{opacity:.35}
-.daynav span{font-weight:800;text-transform:capitalize}
+.daynav .mid{display:flex;align-items:center;gap:8px;font-weight:800}
+.daynav .mid button{width:auto;padding:0 10px;font-size:16px}
+.daynav input[type=date]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 .tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .tl li{display:flex;align-items:center;gap:10px;background:var(--card);padding:12px;border-radius:18px;box-shadow:var(--shadow)}
 .ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:22px;flex:none;color:#fff}
@@ -181,9 +185,10 @@ nav button.on{color:var(--b1)}
    (The anon key is meant to be public; the data is protected by the
    family passphrase + Row Level Security.)
    ========================================================== */
-const SUPABASE_URL  = "https://jyfsrzzwrholfezmhyly.supabase.co/rest/v1/";   // e.g. "https://abcdxyz.supabase.co"
-const SUPABASE_ANON = "";   // anon / public key
+const SUPABASE_URL  = "https://jyfsrzzwrholfezmhyly.supabase.co";   // just the project URL, nothing after ".co"
+const SUPABASE_ANON = "sb_publishable_0BRU8jjK4XaF4s_LkUkqZg_xUC9j5kd";   // publishable (public) key
 const FAMILY_EMAIL  = "family@twintracker.app"; // the one shared login you create in Supabase
+const SB_URL = (SUPABASE_URL||"").trim().replace(/\/rest\/v1\/?$/,"").replace(/\/+$/,"");
 
 /* ---------- translations (static text only) ---------- */
 const I18N = {
@@ -254,16 +259,28 @@ const uuid = () => (crypto.randomUUID? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx
 /* ---------- state ---------- */
 let events=[], guides=[], settings={names:["Baby 1","Baby 2"],intervals:[180,180],nextOverride:{}};
 let view="home", babyIdx=0, viewDay=startOfDay(Date.now()), gId=null, gSaveTimer=null, editorFocused=false;
-let sb=null, mode="demo", ready=false;
+let sb=null, mode="demo", ready=false, welcomeShown=false, configError="";
 const name=i=>(settings.names&&settings.names[i])||("Baby "+(i+1));
 const iv=i=>((settings.intervals&&settings.intervals[i])||180);
 const ICON={feed:"🍼",pee:"💧",poop:"💩",nap:"😴",note:"📝"};
 const EVKEY={feed:"evFeed",pee:"evPee",poop:"evPoop",nap:"evNap",note:"evNote"};
+/* baby icons: i=0 → boy (blue), i=1 → girl (pink, with a bow) */
+function babyIcon(i){
+  const hair = i===0
+    ? `<path d="M41 28 Q44 15 52 22 Q57 16 61 27" fill="none" stroke="#6b4a2f" stroke-width="5" stroke-linecap="round"/>`
+    : `<path d="M43 27 Q49 18 57 25" fill="none" stroke="#6b4a2f" stroke-width="5" stroke-linecap="round"/>
+       <path d="M58 22 L40 12 L42 31 Z" fill="#fff"/><path d="M58 22 L76 12 L74 31 Z" fill="#fff"/><circle cx="58" cy="22" r="5" fill="#ff7a98" stroke="#fff" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="21" cy="58" r="7" fill="#f7c9a5"/><circle cx="79" cy="58" r="7" fill="#f7c9a5"/>
+    <circle cx="50" cy="57" r="30" fill="#ffe3c8"/>${hair}
+    <circle cx="40" cy="57" r="3.4" fill="#3a2f45"/><circle cx="60" cy="57" r="3.4" fill="#3a2f45"/>
+    <circle cx="32" cy="67" r="5" fill="#ffb3b3" opacity=".65"/><circle cx="68" cy="67" r="5" fill="#ffb3b3" opacity=".65"/>
+    <path d="M43 70 Q50 77 57 70" fill="none" stroke="#3a2f45" stroke-width="3" stroke-linecap="round"/></svg>`;
+}
 
 /* ---------- data layer ---------- */
 const toRow=e=>({id:e.id,baby:e.baby,type:e.type,ts:e.ts,end_ts:e.end||null,data:e.data||{}});
 const fromRow=r=>({id:r.id,baby:r.baby,type:r.type,ts:Number(r.ts),end:r.end_ts==null?null:Number(r.end_ts),data:r.data||{}});
-function saveLocal(){ if(!sb) localStorage.setItem("tt_local",JSON.stringify({events,guides,settings})); }
+function saveLocal(){ if(!sb&&!configError) localStorage.setItem("tt_local",JSON.stringify({events,guides,settings})); }
 function loadLocal(){ try{const d=JSON.parse(localStorage.getItem("tt_local")||"{}");events=d.events||[];guides=d.guides||[];if(d.settings)settings=d.settings;}catch(e){} }
 function dbErr(r){ if(r&&r.error){console.error(r.error);toast(t("offline"));loadAll();} }
 function mutEvent(e){
@@ -282,15 +299,17 @@ function removeGuide(id){
   guides=guides.filter(x=>x.id!==id);
   if(sb) sb.from("guides").delete().eq("id",id).then(dbErr); else saveLocal();
 }
-function persistSettings(){ if(sb) sb.from("settings").upsert({id:1,value:settings}).then(dbErr); else saveLocal(); }
+function cacheSettings(){ try{localStorage.setItem("tt_settings",JSON.stringify(settings));}catch(e){} }
+function persistSettings(){ cacheSettings(); if(sb) sb.from("settings").upsert({id:1,value:settings}).then(dbErr); else saveLocal(); }
 
 async function loadAll(){
   if(!sb)return;
   const [e,g,s]=await Promise.all([sb.from("events").select("*"),sb.from("guides").select("*"),sb.from("settings").select("value").eq("id",1).maybeSingle()]);
   if(e.error||g.error){setSync("off");return;}
   events=e.data.map(fromRow); guides=g.data.map(x=>({...x,created:Number(x.created)}));
-  if(s.data&&s.data.value) settings={...settings,...s.data.value};
-  ready=true; if(!settings.named) openSettings(true);
+  if(s.data&&s.data.value){ settings={...settings,...s.data.value}; cacheSettings(); }
+  else if(!s.error&&settings.named) persistSettings();   // push saved names up to the database
+  ready=true; if(!settings.named&&!welcomeShown){ welcomeShown=true; openSettings(true); }
   onData();
 }
 function onData(){ if(!(view==="guides"&&editorFocused)) render(); }
@@ -498,12 +517,11 @@ function entryRow(e){
 }
 function homeView(){
   const today=startOfDay(Date.now());
-  let h=(!SUPABASE_URL?`<div class="banner">ℹ️ Demo mode: data is saved only on this device. Add your Supabase URL/key to sync live between phones.</div>`:"")+`<h2>${t("summary")}</h2><div class="card">`;
+  let h=(configError?`<div class="banner" style="background:#fde6e6;color:#8a1f1f">⚠️ ${esc(configError)}</div>`:(!SB_URL?`<div class="banner">ℹ️ Demo mode: data is saved only on this device. Add your Supabase URL/key to sync live between phones.</div>`:""))+`<h2>${t("summary")}</h2><div class="card">`;
   [0,1].forEach(i=>{
     const c=counts(dayEvents(i,today)), lf=lastOf(i,"feed");
     h+=`<div class="sumrow"><span class="dot" style="background:var(--b${i+1})"></span>${esc(name(i))}</div>
     <div class="sum"><div><span class="e">🍼</span><b>${c.feed}</b><span>${c.ml?c.ml+" ml":t("feedings")}</span></div>
-    <div><span class="e">💧</span><b>${c.pee}</b><span>${t("pees")}</span></div>
     <div><span class="e">💩</span><b>${c.poop}</b><span>${t("poops")}</span></div>
     <div><span class="e">😴</span><b>${c.nap}</b><span>${c.sleep?fmtDur(c.sleep):t("naps")}</span></div></div>
     <div class="last">${t("lastFeed")}: ${lf?`${fmtTime(lf.ts)} · <span data-live="${lf.ts}">${ago(lf.ts)}</span>`:t("none")}</div>${i===0?`<div style="height:12px"></div>`:""}`;
@@ -511,7 +529,7 @@ function homeView(){
   h+=`</div><h2>${t("tapToOpen")}</h2><div class="tiles">`;
   [0,1].forEach(i=>{
     const nap=activeNap(i), nx=nextFeedTs(i);
-    h+=`<button class="tile t${i}" onclick="go('baby',${i})"><div class="avatar">👶</div><h3>${esc(name(i))}</h3>
+    h+=`<button class="tile t${i}" onclick="go('baby',${i})"><div class="avatar">${babyIcon(i)}</div><h3>${esc(name(i))}</h3>
       ${nap?`<span class="badge">😴 ${t("sleeping")} · <span data-live="${nap.ts}" data-kind="dur">${fmtDur(Date.now()-nap.ts)}</span></span>`:""}
       <div class="mini">⏰ ${nx?`<span data-live="${nx}" data-kind="next">…</span>`:t("none")}</div></button>`;
   });
@@ -519,20 +537,25 @@ function homeView(){
 }
 function dayNav(){
   const isToday=viewDay===startOfDay(Date.now());
-  const label=isToday?t("today_"):viewDay===startOfDay(Date.now())-DAY?t("yesterday"):new Date(viewDay).toLocaleDateString(loc(),{weekday:"long",month:"short",day:"numeric"});
-  return `<div class="daynav noprint"><button onclick="shiftDay(-1)">‹</button><span>${esc(label)}</span><button onclick="shiftDay(1)" ${isToday?"disabled":""}>›</button></div>`;
+  const sameYear=new Date(viewDay).getFullYear()===new Date().getFullYear();
+  const label=isToday?t("today_"):new Date(viewDay).toLocaleDateString(loc(),{weekday:"long",month:"long",day:"numeric",...(sameYear?{}:{year:"numeric"})});
+  return `<div class="daynav noprint"><button onclick="shiftDay(-1)">‹</button>
+    <div class="mid"><span>${esc(label)}</span><button aria-label="Pick a date" onclick="pickDay()">📅</button>
+    <input type="date" id="dayPick" value="${toLocalInput(viewDay).slice(0,10)}" max="${toLocalInput(Date.now()).slice(0,10)}" onchange="setDay(this.value)"></div>
+    <button onclick="shiftDay(1)" ${isToday?"disabled":""}>›</button></div>`;
 }
+function pickDay(){ const i=document.getElementById("dayPick"); try{i.showPicker();}catch(e){i.focus();i.click();} }
+function setDay(v){ if(!v)return; const [y,m,d]=v.split("-").map(Number); viewDay=Math.min(startOfDay(new Date(y,m-1,d).getTime()),startOfDay(Date.now())); render(); }
 function shiftDay(n){ const nd=startOfDay(viewDay+n*DAY+DAY/2); if(nd>startOfDay(Date.now()))return; viewDay=nd; render(); }
 function babyView(){
   const i=babyIdx, nap=activeNap(i), nx=nextFeedTs(i);
   const list=dayEvents(i,viewDay);
   return `<button class="back" onclick="go('home')">${t("back")}</button>
-  <div class="bhead"><div class="avatar" style="background:var(--b${i+1})">👶</div><h1>${esc(name(i))}</h1></div>
+  <div class="bhead"><div class="avatar" style="background:var(--b${i+1})">${babyIcon(i)}</div><h1>${esc(name(i))}</h1></div>
   <div class="card next"><div><small>${t("nextFeed")}</small>${nx?`<b class="nx" data-live="${nx}" data-kind="next">…</b><span>${t("at")} ${fmtTime(nx)}</span>`:`<span>${t("noFeedYet")}</span>`}</div>
     <button class="btn ghost" onclick="openTimer()">⏱ ${t("adjust")}</button></div>
   <div class="big">
     <button class="bb feed" onclick="openEntry({type:'feed'})"><span class="em">🍼</span>${t("feed")}</button>
-    <button class="bb pee" onclick="quickLog('pee')"><span class="em">💧</span>${t("pee")}</button>
     <button class="bb poop" onclick="quickLog('poop')"><span class="em">💩</span>${t("poop")}</button>
     <button class="bb nap ${nap?"run":""}" onclick="toggleNap()"><span class="em">😴</span>${nap?t("wake"):t("startNap")}${nap?`<small data-live="${nap.ts}" data-kind="dur">${fmtDur(Date.now()-nap.ts)}</small>`:""}</button>
   </div>
@@ -546,7 +569,7 @@ function reportView(){
    <div class="report"><h2 style="margin:0;font-size:20px;color:var(--ink);text-transform:none;letter-spacing:0">${t("reportTitle")} — ${fmtDate(viewDay)}</h2>`;
   [0,1].forEach(i=>{
     const list=dayEvents(i,viewDay).slice().reverse(), c=counts(list);
-    h+=`<h3>${esc(name(i))}</h3><div class="totals"><span>🍼 ${c.feed}${c.ml?" · "+c.ml+" ml":""}</span><span>💧 ${c.pee}</span><span>💩 ${c.poop}</span><span>😴 ${c.nap}${c.sleep?" · "+fmtDur(c.sleep):""}</span></div>`;
+    h+=`<h3>${esc(name(i))}</h3><div class="totals"><span>🍼 ${c.feed}${c.ml?" · "+c.ml+" ml":""}</span><span>💩 ${c.poop}</span><span>😴 ${c.nap}${c.sleep?" · "+fmtDur(c.sleep):""}</span></div>`;
     h+= list.length? `<table><tr><th>${t("time")}</th><th>${t("entry")}</th><th>${t("details_")}</th></tr>${list.map(e=>{
       let d=dataText(e); if(e.type==="nap")d=e.end?`${fmtTime(e.ts)} → ${fmtTime(e.end)} (${fmtDur(e.end-e.ts)})`:`${t("sleeping")}`; if(e.type==="note")d=(e.data||{}).text||"";
       return `<tr><td>${fmtTime(e.ts)}</td><td>${ICON[e.type]} ${esc(t(EVKEY[e.type]))}</td><td>${esc(d)}</td></tr>`;}).join("")}</table>` : `<div class="empty">${t("nothing")}</div>`;
@@ -605,8 +628,11 @@ function render(){
 /* ---------- start ---------- */
 (async function init(){
   document.documentElement.lang=lang; applyStatic(); tick();
-  if(!SUPABASE_URL){ loadLocal(); setSync("demo"); ready=true; render(); if(!settings.named)openSettings(true); return; }
-  sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+  try{ const c=JSON.parse(localStorage.getItem("tt_settings")||"null"); if(c&&c.names)settings={...settings,...c}; }catch(e){}
+  if(!SB_URL){ loadLocal(); setSync("demo"); ready=true; render(); if(!settings.named)openSettings(true); return; }
+  if(!SUPABASE_ANON){ configError="Setup incomplete: paste your Supabase anon (public) key into index.html. Nothing is being saved to the database yet."; setSync("off"); render(); return; }
+  try{ sb=supabase.createClient(SB_URL,SUPABASE_ANON); }
+  catch(e){ sb=null; configError="Couldn't connect to Supabase: "+e.message; setSync("off"); render(); return; }
   const {data:{session}}=await sb.auth.getSession();
   if(session) startRemote(); else document.getElementById("lock").classList.add("show");
   sb.auth.onAuthStateChange(ev=>{ if(ev==="SIGNED_OUT")document.getElementById("lock").classList.add("show"); });
