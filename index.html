@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f4ff">
+<title>Twin Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#f6f4ff; --card:#ffffff; --ink:#23213a; --mute:#7a7794; --line:#e8e5f5;
+  --b1:#5b7cff; --b1s:#e9eeff; --b2:#ff7a98; --b2s:#ffeaf0;
+  --feed:#ffb020; --pee:#31b7e8; --poop:#a9754f; --nap:#8b6cf0; --note:#4cb38a; --danger:#e5484d;
+  --shadow:0 6px 24px rgba(60,50,120,.10); --r:22px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:96px;min-height:100vh}
+button{font:inherit;cursor:pointer;border:0;color:inherit}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:0;z-index:20;background:rgba(246,244,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0}
+.clock{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1}
+.date{color:var(--mute);font-size:13px;margin-top:3px;font-weight:600}
+.hd-r{display:flex;gap:6px;align-items:center}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 11px;font-weight:700;font-size:14px;box-shadow:var(--shadow)}
+.lang{display:flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px;box-shadow:var(--shadow)}
+.lang button{background:transparent;padding:6px 10px;border-radius:999px;font-weight:800;font-size:13px;color:var(--mute)}
+.lang button.on{background:var(--ink);color:#fff}
+.sync{width:12px;height:12px;border-radius:50%;display:inline-block;background:#bbb}
+.sync.live{background:#27c281;animation:pulse 1.6s infinite}.sync.demo{background:#ffb020}.sync.off{background:var(--danger)}
+@keyframes pulse{50%{opacity:.3}}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:26px 2px 10px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.sum div{padding:10px 4px;border-radius:16px;background:var(--bg)}
+.sum b{display:block;font-size:26px;font-weight:800}
+.sum span{font-size:11px;color:var(--mute);font-weight:700}
+.sum .e{font-size:20px;display:block}
+.sumrow{display:flex;align-items:center;gap:10px;margin:8px 0 6px;font-weight:800}
+.dot{width:12px;height:12px;border-radius:50%}
+.last{color:var(--mute);font-size:13px;margin:8px 2px 0;font-weight:600}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tile{border-radius:28px;padding:20px 12px;text-align:center;box-shadow:var(--shadow);transition:transform .12s}
+.tile:active{transform:scale(.97)}
+.tile.t0{background:linear-gradient(160deg,#fff,var(--b1s));border:2px solid #cdd8ff}
+.tile.t1{background:linear-gradient(160deg,#fff,var(--b2s));border:2px solid #ffd0db}
+.avatar{width:72px;height:72px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;font-size:38px;color:#fff}
+.t0 .avatar{background:var(--b1)}.t1 .avatar{background:var(--b2)}
+.tile h3{margin:0;font-size:22px}
+.tile .mini{margin-top:8px;font-size:13px;color:var(--mute);font-weight:700;line-height:1.6}
+.nx.od,.od{color:var(--danger)!important}
+.badge{display:inline-block;margin-top:8px;font-size:12px;font-weight:800;background:var(--nap);color:#fff;border-radius:999px;padding:4px 10px}
+.back{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-weight:800;margin:14px 0 4px;box-shadow:var(--shadow)}
+.bhead{display:flex;align-items:center;gap:12px;margin:10px 0 14px}
+.bhead .avatar{margin:0;width:56px;height:56px;font-size:30px}
+.bhead h1{margin:0;font-size:28px}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bb{border-radius:26px;padding:22px 10px;font-weight:800;font-size:20px;color:#fff;display:flex;flex-direction:column;gap:6px;align-items:center;box-shadow:var(--shadow);min-height:120px;justify-content:center;transition:transform .1s}
+.bb:active{transform:scale(.95)}
+.bb .em{font-size:40px}
+.bb small{font-weight:700;opacity:.9;font-size:13px}
+.bb.feed{background:var(--feed)}.bb.pee{background:var(--pee)}.bb.poop{background:var(--poop)}.bb.nap{background:var(--nap)}
+.bb.nap.run{background:#5b3fd6;animation:glow 2s infinite}
+@keyframes glow{50%{box-shadow:0 0 0 8px rgba(139,108,240,.25)}}
+.next{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.next small{display:block;color:var(--mute);font-weight:800;text-transform:uppercase;font-size:11px;letter-spacing:.06em}
+.next b{font-size:24px;display:block;margin:2px 0}
+.next span{color:var(--mute);font-weight:600;font-size:13px}
+.daynav{display:flex;align-items:center;justify-content:space-between;margin:22px 0 10px}
+.daynav button{background:var(--card);border:1px solid var(--line);border-radius:12px;width:42px;height:38px;font-size:18px;font-weight:800}
+.daynav button:disabled{opacity:.35}
+.daynav span{font-weight:800;text-transform:capitalize}
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tl li{display:flex;align-items:center;gap:10px;background:var(--card);padding:12px;border-radius:18px;box-shadow:var(--shadow)}
+.ic{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:22px;flex:none;color:#fff}
+.ic.feed{background:var(--feed)}.ic.pee{background:var(--pee)}.ic.poop{background:var(--poop)}.ic.nap{background:var(--nap)}.ic.note{background:var(--note)}
+.tl .m{flex:1;min-width:0;cursor:pointer}
+.tl .m b{display:block;font-size:16px}
+.tl .m span{color:var(--mute);font-size:13px;font-weight:600;word-break:break-word;white-space:pre-wrap}
+.ib{background:transparent;font-size:18px;padding:8px;border-radius:10px;opacity:.6}
+.ib:hover{opacity:1;background:var(--bg)}
+.empty{text-align:center;color:var(--mute);padding:26px;font-weight:600}
+textarea,input[type=text],input[type=password],input[type=number],input[type=time],input[type=datetime-local]{width:100%;font:inherit;padding:12px 14px;border:2px solid var(--line);border-radius:14px;background:#fff;color:var(--ink);outline:none}
+textarea:focus,input:focus{border-color:var(--b1)}
+textarea{resize:vertical;min-height:50px}
+.noteform{display:flex;gap:8px}
+.btn{background:var(--ink);color:#fff;border-radius:14px;padding:12px 18px;font-weight:800}
+.btn.green{background:var(--note)}.btn.red{background:var(--danger)}.btn.amber{background:var(--feed)}.btn.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav .in{max-width:760px;margin:0 auto;display:flex}
+nav button{flex:1;background:transparent;padding:10px 6px 12px;font-weight:800;font-size:13px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button .em{font-size:24px}
+nav button.on{color:var(--b1)}
+.ov{position:fixed;inset:0;background:rgba(30,25,60,.5);z-index:50;display:none;align-items:flex-end;justify-content:center;padding:0}
+.ov.show{display:flex}
+@media(min-width:600px){.ov{align-items:center;padding:20px}}
+.modal{background:#fff;border-radius:26px 26px 0 0;padding:22px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:92vh;overflow:auto}
+@media(min-width:600px){.modal{border-radius:26px}}
+.modal h3{margin:0 0 8px;font-size:22px}
+.modal p{color:var(--mute);margin:0 0 16px;line-height:1.45}
+.modal .row{display:flex;gap:10px;margin-top:16px}.modal .row button{flex:1;padding:15px;font-size:16px}
+.field{margin-bottom:14px}.field>label{display:block;font-size:12px;font-weight:800;color:var(--mute);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--bg);border:2px solid var(--line);border-radius:999px;padding:10px 15px;font-weight:800;font-size:15px}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg .chip{border-radius:16px;text-align:center;padding:14px 8px}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(30px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:60;display:flex;gap:12px;align-items:center;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+.toast button{background:#fff;color:var(--ink);border-radius:999px;padding:6px 12px;font-weight:800;font-size:13px}
+.gtabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px}
+.gtabs button{white-space:nowrap;background:var(--card);border:1px solid var(--line);padding:10px 16px;border-radius:999px;font-weight:800;box-shadow:var(--shadow)}
+.gtabs button.on{background:var(--ink);color:#fff}
+.gtabs button.add{color:var(--b1);border-style:dashed}
+.toolbar{display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:var(--bg);border-radius:14px;margin-bottom:10px;align-items:center}
+.toolbar button{background:#fff;border:1px solid var(--line);border-radius:9px;min-width:36px;height:36px;font-weight:800;padding:0 8px}
+.toolbar select,.toolbar input[type=color]{height:36px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit;padding:0 4px}
+.toolbar input[type=color]{width:38px;padding:2px}
+.editor{min-height:260px;padding:16px;border:2px solid var(--line);border-radius:16px;outline:none;line-height:1.6;background:#fff;font-size:16px}
+.editor:focus{border-color:var(--b1)}
+.editor h1{font-size:26px;margin:.4em 0}.editor h2{font-size:21px;margin:.5em 0;text-transform:none;letter-spacing:0;color:var(--ink)}
+.ghead{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.ghead input{font-weight:800;font-size:18px}
+.saved{font-size:12px;color:var(--mute);font-weight:700;margin-top:8px;min-height:16px}
+.banner{background:#fff3d6;color:#6b4700;border-radius:16px;padding:12px 14px;font-size:14px;font-weight:600;margin-top:12px;line-height:1.45}
+#lock{position:fixed;inset:0;background:linear-gradient(160deg,#eef0ff,#ffeef3);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+#lock.show{display:flex}
+#lock .box{background:#fff;border-radius:28px;padding:28px;max-width:400px;width:100%;box-shadow:var(--shadow);text-align:center}
+#lock .big-e{font-size:54px}
+#lock h1{margin:8px 0 6px}#lock p{color:var(--mute);margin:0 0 16px}
+.err{color:var(--danger);font-weight:700;min-height:20px;margin:8px 0}
+/* report */
+.report h3{margin:18px 0 6px}
+.report table{width:100%;border-collapse:collapse;font-size:14px;background:#fff;border-radius:12px;overflow:hidden}
+.report th,.report td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.report th{background:var(--bg);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute)}
+.totals{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.totals span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-weight:800;font-size:13px}
+@media print{
+  header,nav,.noprint,.toast,.back{display:none!important}
+  body{background:#fff;padding:0}
+  .card,.report table{box-shadow:none}
+  .report h3{break-after:avoid}.report table{break-inside:auto}
+}
+</style>
+</head>
+<body>
+
+<header class="noprint"><div class="wrap hd">
+  <div><div class="clock" id="clock">--:--</div><div class="date" id="date"></div></div>
+  <div class="hd-r">
+    <span class="sync demo" id="sync"></span>
+    <div class="lang"><button id="lEn" onclick="setLang('en')">EN</button><button id="lEs" onclick="setLang('es')">ES</button></div>
+    <button class="pill" onclick="openSettings()" aria-label="Settings">⚙️</button>
+  </div>
+</div></header>
+
+<main class="wrap" id="app"></main>
+
+<nav><div class="in">
+  <button id="navHome" onclick="go('home')"><span class="em">🏠</span><span data-i="today"></span></button>
+  <button id="navGuides" onclick="go('guides')"><span class="em">📖</span><span data-i="guides"></span></button>
+  <button id="navReport" onclick="go('report')"><span class="em">🖨️</span><span data-i="report"></span></button>
+</div></nav>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<div id="lock"><form class="box" onsubmit="return unlock(event)">
+  <div class="big-e">🔒</div><h1 data-i="pinTitle"></h1><p data-i="pinSub"></p>
+  <input type="password" id="pinIn" autocomplete="current-password" data-ph="pinPh">
+  <div class="err" id="pinErr"></div>
+  <button class="btn green" style="width:100%;padding:15px;font-size:16px" id="pinBtn" data-i="unlock"></button>
+</form></div>
+
+<script>
+/* ==========================================================
+   SETUP — fill these in (see the setup steps in chat).
+   Leave SUPABASE_URL empty to try the app in single-device demo mode.
+   (The anon key is meant to be public; the data is protected by the
+   family passphrase + Row Level Security.)
+   ========================================================== */
+const SUPABASE_URL  = "";   // e.g. "https://abcdxyz.supabase.co"
+const SUPABASE_ANON = "";   // anon / public key
+const FAMILY_EMAIL  = "family@twintracker.app"; // the one shared login you create in Supabase
+
+/* ---------- translations (static text only) ---------- */
+const I18N = {
+ en:{today:"Today",guides:"Guides",report:"Report",summary:"Today's summary",feedings:"Feedings",pees:"Pees",poops:"Poops",naps:"Naps",
+  feed:"Feeding",pee:"Pee",poop:"Poop",nap:"Nap",startNap:"Start nap",wake:"Wake up",sleeping:"Sleeping",
+  lastFeed:"Last feed",none:"—",ago:"ago",tapToOpen:"Tap a baby to open",
+  back:"‹ Back",notes:"Notes",addNote:"Add note",notePh:"Write a note… (time is added automatically)",
+  nothing:"Nothing logged yet",logged:"Logged",delete:"Delete",deleteQ:"Delete this entry?",
+  deleteSub:"This can't be undone.",yes:"Yes, delete",cancel:"Cancel",save:"Save",
+  slept:"Slept",napRun:"Sleeping now · started",
+  settings:"Settings",baby1:"Baby 1 name",baby2:"Baby 2 name",close:"Close",welcome:"Welcome!",welcomeSub:"Enter the babies' names to get started.",start:"Let's go",
+  lockNow:"🔒 Lock this device",
+  guidesTitle:"Instructions for the nanny",newGuide:"New guide",guideTitle:"Guide title",saved:"Saved ✓",saving:"Saving…",
+  untitled:"Untitled guide",noGuides:"No guides yet. Tap “+ New guide” to write one.",deleteGuide:"Delete guide",deleteGuideQ:"Delete this guide?",
+  today_:"Today",yesterday:"Yesterday",evFeed:"Feeding",evPee:"Pee",evPoop:"Poop",evNap:"Nap",evNote:"Note",h1:"Heading 1",h2:"Heading 2",p:"Paragraph",
+  breast:"Breast",bottle:"Bottle",formula:"Formula",breastMilk:"Breast milk",left:"Left",right:"Right",both:"Both",
+  logFeeding:"Log feeding",time:"Time",now:"Now",minAgo:"min ago",hrAgo:"hr ago",amount:"Amount (ml)",contents:"Bottle contains",
+  details:"Details (optional)",light:"Light",normal:"Normal",heavy:"Heavy",runny:"Runny",soft:"Soft",firm:"Firm",
+  yellow:"Yellow",green:"Green",brown:"Brown",other:"Other",consistency:"Consistency",color:"Color",wetness:"Wetness",
+  addDetails:"Add details",edit:"Edit entry",napStart:"Fell asleep",napEnd:"Woke up",stillSleeping:"(leave empty if still sleeping)",
+  nextFeed:"Next feeding",adjust:"Adjust",overdue:"Overdue",inLabel:"in",at:"at",noFeedYet:"Log a feeding to start the timer",
+  timerTitle:"Feeding timer",every:"Feed every",hours:"h",applyBoth:"Apply to both babies",specific:"Or set the next feeding for a specific time (one time)",
+  resetOne:"Clear one-time time",custom:"Custom (minutes)",
+  pinTitle:"Family passphrase",pinSub:"Enter it once — this device will remember.",pinPh:"Passphrase",unlock:"Unlock",wrongPin:"That passphrase didn't work. Try again.",
+  print:"Print / Save PDF",totals:"Totals",sleepTotal:"Sleep",entry:"Entry",details_:"Details",offline:"Couldn't save — check your connection.",
+  reportTitle:"Daily report",total:"total"},
+ es:{today:"Hoy",guides:"Guías",report:"Informe",summary:"Resumen de hoy",feedings:"Comidas",pees:"Pipí",poops:"Popó",naps:"Siestas",
+  feed:"Comida",pee:"Pipí",poop:"Popó",nap:"Siesta",startNap:"Iniciar siesta",wake:"Despertó",sleeping:"Durmiendo",
+  lastFeed:"Última comida",none:"—",ago:"hace",tapToOpen:"Toca un bebé para abrir",
+  back:"‹ Atrás",notes:"Notas",addNote:"Agregar nota",notePh:"Escribe una nota… (la hora se agrega sola)",
+  nothing:"Aún no hay registros",logged:"Registrado",delete:"Eliminar",deleteQ:"¿Eliminar este registro?",
+  deleteSub:"Esto no se puede deshacer.",yes:"Sí, eliminar",cancel:"Cancelar",save:"Guardar",
+  slept:"Durmió",napRun:"Durmiendo ahora · desde",
+  settings:"Ajustes",baby1:"Nombre del bebé 1",baby2:"Nombre del bebé 2",close:"Cerrar",welcome:"¡Bienvenido!",welcomeSub:"Escribe los nombres de los bebés para comenzar.",start:"Empezar",
+  lockNow:"🔒 Bloquear este dispositivo",
+  guidesTitle:"Instrucciones para la niñera",newGuide:"Nueva guía",guideTitle:"Título de la guía",saved:"Guardado ✓",saving:"Guardando…",
+  untitled:"Guía sin título",noGuides:"Aún no hay guías. Toca “+ Nueva guía” para escribir una.",deleteGuide:"Eliminar guía",deleteGuideQ:"¿Eliminar esta guía?",
+  today_:"Hoy",yesterday:"Ayer",evFeed:"Comida",evPee:"Pipí",evPoop:"Popó",evNap:"Siesta",evNote:"Nota",h1:"Título 1",h2:"Título 2",p:"Párrafo",
+  breast:"Pecho",bottle:"Biberón",formula:"Fórmula",breastMilk:"Leche materna",left:"Izquierdo",right:"Derecho",both:"Ambos",
+  logFeeding:"Registrar comida",time:"Hora",now:"Ahora",minAgo:"min atrás",hrAgo:"h atrás",amount:"Cantidad (ml)",contents:"El biberón contiene",
+  details:"Detalles (opcional)",light:"Poco",normal:"Normal",heavy:"Mucho",runny:"Líquido",soft:"Blando",firm:"Firme",
+  yellow:"Amarillo",green:"Verde",brown:"Café",other:"Otro",consistency:"Consistencia",color:"Color",wetness:"Humedad",
+  addDetails:"Agregar detalles",edit:"Editar registro",napStart:"Se durmió",napEnd:"Despertó",stillSleeping:"(déjalo vacío si sigue dormido)",
+  nextFeed:"Próxima comida",adjust:"Ajustar",overdue:"Atrasada",inLabel:"en",at:"a las",noFeedYet:"Registra una comida para iniciar el temporizador",
+  timerTitle:"Temporizador de comida",every:"Comer cada",hours:"h",applyBoth:"Aplicar a ambos bebés",specific:"O fija la próxima comida a una hora específica (una vez)",
+  resetOne:"Borrar hora única",custom:"Personalizado (minutos)",
+  pinTitle:"Clave familiar",pinSub:"Escríbela una vez — este dispositivo la recordará.",pinPh:"Clave",unlock:"Entrar",wrongPin:"Esa clave no funcionó. Intenta de nuevo.",
+  print:"Imprimir / Guardar PDF",totals:"Totales",sleepTotal:"Sueño",entry:"Registro",details_:"Detalles",offline:"No se pudo guardar — revisa tu conexión.",
+  reportTitle:"Informe diario",total:"total"}
+};
+let lang = localStorage.getItem("tt_lang")||"en";
+const t = k => (I18N[lang]&&I18N[lang][k]) || I18N.en[k] || k;
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const loc = () => lang==="es"?"es-US":"en-US";
+const fmtTime = ms => new Date(ms).toLocaleTimeString(loc(),{hour:"numeric",minute:"2-digit"});
+const fmtDate = ms => new Date(ms).toLocaleDateString(loc(),{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+const startOfDay = ms => { const d=new Date(ms); d.setHours(0,0,0,0); return d.getTime(); };
+const DAY = 86400000, MIN=60000;
+const fmtDur = ms => { const m=Math.max(0,Math.round(ms/MIN)); const h=Math.floor(m/60); return h? `${h}h ${m%60}m` : `${m}m`; };
+const ago = ms => { const m=Math.max(0,Math.round((Date.now()-ms)/MIN)); if(m<1) return lang==="es"?"ahora":"just now";
+  const s=fmtDur(m*MIN); return lang==="es"? `${t("ago")} ${s}` : `${s} ${t("ago")}`; };
+const pad=n=>String(n).padStart(2,"0");
+const toTimeInput = ms => { const d=new Date(ms); return pad(d.getHours())+":"+pad(d.getMinutes()); };
+const toLocalInput = ms => { const d=new Date(ms); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+function timeTodayish(str){ const [h,m]=str.split(":").map(Number); const d=new Date(); d.setHours(h,m,0,0); if(d.getTime()>Date.now()+MIN) d.setDate(d.getDate()-1); return d.getTime(); }
+const uuid = () => (crypto.randomUUID? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==="x"?r:(r&3|8)).toString(16)}));
+
+/* ---------- state ---------- */
+let events=[], guides=[], settings={names:["Baby 1","Baby 2"],intervals:[180,180],nextOverride:{}};
+let view="home", babyIdx=0, viewDay=startOfDay(Date.now()), gId=null, gSaveTimer=null, editorFocused=false;
+let sb=null, mode="demo", ready=false;
+const name=i=>(settings.names&&settings.names[i])||("Baby "+(i+1));
+const iv=i=>((settings.intervals&&settings.intervals[i])||180);
+const ICON={feed:"🍼",pee:"💧",poop:"💩",nap:"😴",note:"📝"};
+const EVKEY={feed:"evFeed",pee:"evPee",poop:"evPoop",nap:"evNap",note:"evNote"};
+
+/* ---------- data layer ---------- */
+const toRow=e=>({id:e.id,baby:e.baby,type:e.type,ts:e.ts,end_ts:e.end||null,data:e.data||{}});
+const fromRow=r=>({id:r.id,baby:r.baby,type:r.type,ts:Number(r.ts),end:r.end_ts==null?null:Number(r.end_ts),data:r.data||{}});
+function saveLocal(){ if(!sb) localStorage.setItem("tt_local",JSON.stringify({events,guides,settings})); }
+function loadLocal(){ try{const d=JSON.parse(localStorage.getItem("tt_local")||"{}");events=d.events||[];guides=d.guides||[];if(d.settings)settings=d.settings;}catch(e){} }
+function dbErr(r){ if(r&&r.error){console.error(r.error);toast(t("offline"));loadAll();} }
+function mutEvent(e){
+  const i=events.findIndex(x=>x.id===e.id); if(i>=0)events[i]=e; else events.push(e);
+  render(); if(sb) sb.from("events").upsert(toRow(e)).then(dbErr); else saveLocal();
+}
+function removeEvent(id){
+  events=events.filter(x=>x.id!==id); render();
+  if(sb) sb.from("events").delete().eq("id",id).then(dbErr); else saveLocal();
+}
+function mutGuide(g){
+  const i=guides.findIndex(x=>x.id===g.id); if(i>=0)guides[i]=g; else guides.push(g);
+  if(sb) sb.from("guides").upsert({id:g.id,title:g.title||"",html:g.html||"",created:g.created||0}).then(dbErr); else saveLocal();
+}
+function removeGuide(id){
+  guides=guides.filter(x=>x.id!==id);
+  if(sb) sb.from("guides").delete().eq("id",id).then(dbErr); else saveLocal();
+}
+function persistSettings(){ if(sb) sb.from("settings").upsert({id:1,value:settings}).then(dbErr); else saveLocal(); }
+
+async function loadAll(){
+  if(!sb)return;
+  const [e,g,s]=await Promise.all([sb.from("events").select("*"),sb.from("guides").select("*"),sb.from("settings").select("value").eq("id",1).maybeSingle()]);
+  if(e.error||g.error){setSync("off");return;}
+  events=e.data.map(fromRow); guides=g.data.map(x=>({...x,created:Number(x.created)}));
+  if(s.data&&s.data.value) settings={...settings,...s.data.value};
+  ready=true; if(!settings.named) openSettings(true);
+  onData();
+}
+function onData(){ if(!(view==="guides"&&editorFocused)) render(); }
+function startRemote(){
+  document.getElementById("lock").classList.remove("show");
+  loadAll();
+  ["events","guides","settings"].forEach(tb=>{
+    sb.channel("tt-"+tb).on("postgres_changes",{event:"*",schema:"public",table:tb},()=>loadAll())
+      .subscribe(st=>{ if(st==="SUBSCRIBED")setSync("live"); else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT"||st==="CLOSED")setSync("off"); });
+  });
+  setInterval(loadAll,30000);                       // safety net
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)loadAll();});
+  window.addEventListener("online",loadAll);
+}
+async function unlock(ev){
+  ev.preventDefault();
+  const pw=document.getElementById("pinIn").value; if(!pw)return false;
+  const b=document.getElementById("pinBtn"); b.disabled=true;
+  const {error}=await sb.auth.signInWithPassword({email:FAMILY_EMAIL,password:pw});
+  b.disabled=false;
+  if(error){document.getElementById("pinErr").textContent=t("wrongPin");return false;}
+  document.getElementById("pinIn").value=""; document.getElementById("pinErr").textContent="";
+  startRemote(); return false;
+}
+function lockDevice(){ if(sb) sb.auth.signOut().then(()=>location.reload()); }
+function setSync(m){ mode=m; document.getElementById("sync").className="sync "+m; document.getElementById("sync").title=m; }
+
+/* ---------- routing / language ---------- */
+function go(v,i){ saveGuideNow(); view=v; if(i!==undefined)babyIdx=i; if(i!==undefined||v==="home")viewDay=startOfDay(Date.now()); render(); window.scrollTo(0,0); }
+function setLang(l){lang=l;localStorage.setItem("tt_lang",l);document.documentElement.lang=l;applyStatic();render();tick();}
+function applyStatic(){
+  document.querySelectorAll("[data-i]").forEach(e=>e.textContent=t(e.dataset.i));
+  document.querySelectorAll("[data-ph]").forEach(e=>e.placeholder=t(e.dataset.ph));
+  document.getElementById("lEn").classList.toggle("on",lang==="en");
+  document.getElementById("lEs").classList.toggle("on",lang==="es");
+}
+
+/* ---------- clock + live labels ---------- */
+function liveText(el){
+  const ts=+el.dataset.live, k=el.dataset.kind||"ago", n=Date.now();
+  if(k==="dur") el.textContent=fmtDur(n-ts);
+  else if(k==="next"){ const d=ts-n; el.textContent = d>=0? `${t("inLabel")} ${fmtDur(d)}` : `${t("overdue")} ${fmtDur(-d)}`; el.classList.toggle("od",d<0); }
+  else el.textContent=ago(ts);
+}
+function tick(){
+  const n=Date.now();
+  document.getElementById("clock").textContent=new Date(n).toLocaleTimeString(loc(),{hour:"numeric",minute:"2-digit",second:"2-digit"});
+  document.getElementById("date").textContent=fmtDate(n);
+  const today=startOfDay(n);
+  if(today!==tick.last){ if(viewDay===tick.last||!tick.last) viewDay=today; tick.last=today; render(); }
+  document.querySelectorAll("[data-live]").forEach(liveText);
+}
+setInterval(tick,1000);
+
+/* ---------- queries ---------- */
+const dayEvents=(b,day)=>events.filter(e=>e.baby===b&&e.ts>=day&&e.ts<day+DAY).sort((a,b)=>b.ts-a.ts);
+const activeNap=b=>events.find(e=>e.baby===b&&e.type==="nap"&&!e.end);
+const lastOf=(b,type)=>events.filter(e=>e.baby===b&&e.type===type).sort((x,y)=>y.ts-x.ts)[0];
+function counts(list){const c={feed:0,pee:0,poop:0,nap:0,ml:0,sleep:0};list.forEach(e=>{if(c[e.type]!==undefined)c[e.type]++; if(e.type==="feed"&&e.data&&e.data.ml)c.ml+=Number(e.data.ml); if(e.type==="nap")c.sleep+=((e.end||Date.now())-e.ts);});return c;}
+function nextFeedTs(b){
+  const lf=lastOf(b,"feed"), ov=settings.nextOverride&&settings.nextOverride[b];
+  if(ov&&(!lf||ov.setAt>lf.ts))return ov.ts;
+  return lf? lf.ts+iv(b)*MIN : null;
+}
+function dataText(e){
+  const d=e.data||{}, p=[];
+  if(e.type==="feed"){
+    if(d.src==="breast"){p.push(t("breast")); if(d.side)p.push(t(d.side));}
+    else{p.push(t("bottle")); if(d.milk)p.push(t(d.milk==="formula"?"formula":"breastMilk")); if(d.ml)p.push(d.ml+" ml");}
+  } else if(e.type==="pee"){ if(d.amount)p.push(t(d.amount)); }
+  else if(e.type==="poop"){ if(d.consistency)p.push(t(d.consistency)); if(d.color)p.push(t(d.color)); }
+  return p.join(" · ");
+}
+
+/* ---------- toast / modal ---------- */
+function toast(msg,label,fn,ms){
+  const el=document.getElementById("toast"); el.innerHTML=`<span>${esc(msg)}</span>`;
+  if(label){const b=document.createElement("button");b.textContent=label;b.onclick=()=>{el.classList.remove("show");fn();};el.appendChild(b);}
+  el.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("show"),ms||(label?5500:1800));
+}
+function openModal(html){document.getElementById("modal").innerHTML=html;document.getElementById("ov").classList.add("show");}
+function closeModal(){document.getElementById("ov").classList.remove("show");}
+document.getElementById("ov").addEventListener("click",e=>{if(e.target.id==="ov"&&!document.getElementById("noDismiss"))closeModal();});
+/* two-step delete: trash -> "Yes, delete" */
+function askDelete(title,sub,onYes){
+  openModal(`<h3>${esc(title)}</h3><p>${esc(sub)}</p><div class="row"><button class="btn ghost" onclick="closeModal()">${t("cancel")}</button><button class="btn red" id="yesDel">${t("yes")}</button></div>`);
+  document.getElementById("yesDel").onclick=()=>{closeModal();onYes();};
+}
+function delEvent(id){askDelete(t("deleteQ"),t("deleteSub"),()=>{removeEvent(id);toast("🗑 "+t("delete")+" ✓");});}
+
+/* ---------- quick actions ---------- */
+function quickLog(type){
+  const e={id:uuid(),baby:babyIdx,type,ts:Date.now(),end:null,data:{}};
+  mutEvent(e); if(navigator.vibrate)navigator.vibrate(25);
+  toast(`${ICON[type]} ${t(EVKEY[type])} · ${fmtTime(e.ts)} ✓`,t("addDetails"),()=>openEntry({id:e.id}));
+}
+function toggleNap(){
+  const n=activeNap(babyIdx), now=Date.now();
+  if(n){ mutEvent({...n,end:now}); toast(`😴 ${t("wake")} · ${fmtTime(now)} ✓`); }
+  else { mutEvent({id:uuid(),baby:babyIdx,type:"nap",ts:now,end:null,data:{}}); toast(`😴 ${t("startNap")} · ${fmtTime(now)} ✓`); }
+}
+function addNote(){
+  const ta=document.getElementById("noteText"); const v=ta.value.trim(); if(!v)return;
+  mutEvent({id:uuid(),baby:babyIdx,type:"note",ts:Date.now(),end:null,data:{text:v}}); ta.value=""; toast(`📝 ${t("logged")} ✓`);
+}
+
+/* ---------- entry sheet (new feeding / edit any entry) ---------- */
+let fs=null; const OPT=["side","amount","consistency","color"];
+function openEntry({type,id}){
+  if(id){ const e=events.find(x=>x.id===id); if(!e)return;
+    fs={mode:"edit",id,type:e.type,baby:e.baby,ts:e.ts,end:e.end,...(e.data||{})};
+  } else {
+    const lf=lastOf(babyIdx,"feed"), d=(lf&&lf.data)||{};
+    fs={mode:"new",type:"feed",baby:babyIdx,ts:null,src:d.src||"bottle",milk:d.milk||"formula",ml:d.ml||90};
+  }
+  renderSheet();
+}
+const chips=(key,opts,cur)=>`<div class="chips">${opts.map(o=>`<button type="button" class="chip ${cur===o[0]?"on":""}" onclick="setF('${key}','${o[0]}')">${o[1]}</button>`).join("")}</div>`;
+const seg=(key,opts,cur)=>`<div class="seg">${opts.map(o=>`<button type="button" class="chip ${cur===o[0]?"on":""}" onclick="setF('${key}','${o[0]}')">${o[1]}</button>`).join("")}</div>`;
+function setF(k,v){ if(k==="ml")v=Number(v); fs[k]=(fs[k]===v&&OPT.includes(k))?null:v; renderSheet(); }
+function setAgo(m){ fs.ts=m?Date.now()-m*MIN:null; renderSheet(); }
+function renderSheet(){
+  const isNew=fs.mode==="new", ty=fs.type; let h=`<h3>${isNew?"🍼 "+t("logFeeding"):ICON[ty]+" "+t("edit")} · ${esc(name(fs.baby))}</h3>`;
+  if(ty==="feed"){
+    h+=`<div class="field">${seg("src",[["breast","🤱 "+t("breast")],["bottle","🍼 "+t("bottle")]],fs.src)}</div>`;
+    if(fs.src==="breast") h+=`<div class="field"><label>${t("details")}</label>${chips("side",[["left",t("left")],["right",t("right")],["both",t("both")]],fs.side)}</div>`;
+    else h+=`<div class="field"><label>${t("contents")}</label>${seg("milk",[["formula",t("formula")],["breastmilk",t("breastMilk")]],fs.milk)}</div>
+      <div class="field"><label>${t("amount")}</label>${chips("ml",[30,60,90,120,150,180].map(n=>[n,n]),fs.ml)}
+      <input type="number" inputmode="numeric" min="0" id="mlIn" style="margin-top:10px" value="${fs.ml||""}" placeholder="ml" oninput="fs.ml=Number(this.value)||null"></div>`;
+  }
+  if(ty==="pee") h+=`<div class="field"><label>${t("wetness")}</label>${chips("amount",[["light",t("light")],["normal",t("normal")],["heavy",t("heavy")]],fs.amount)}</div>`;
+  if(ty==="poop") h+=`<div class="field"><label>${t("consistency")}</label>${chips("consistency",[["runny",t("runny")],["soft",t("soft")],["firm",t("firm")]],fs.consistency)}</div>
+    <div class="field"><label>${t("color")}</label>${chips("color",[["yellow",t("yellow")],["green",t("green")],["brown",t("brown")],["other",t("other")]],fs.color)}</div>`;
+  if(ty==="note") h+=`<div class="field"><textarea id="noteEdit" rows="3">${esc(fs.text||"")}</textarea></div>`;
+  if(isNew){
+    h+=`<div class="field"><label>${t("time")}</label><div class="chips"><button type="button" class="chip ${fs.ts==null?"on":""}" onclick="setAgo(0)">${t("now")}</button>
+      ${[15,30,60,120].map(m=>`<button type="button" class="chip" onclick="setAgo(${m})">${m<60?m+" "+t("minAgo"):(m/60)+" "+t("hrAgo")}</button>`).join("")}</div>
+      <input type="time" id="timeIn" style="margin-top:10px" value="${toTimeInput(fs.ts||Date.now())}" onchange="fs.ts=timeTodayish(this.value)"></div>`;
+  } else {
+    h+=`<div class="field"><label>${ty==="nap"?t("napStart"):t("time")}</label><input type="datetime-local" id="tsIn" value="${toLocalInput(fs.ts)}" onchange="fs.ts=new Date(this.value).getTime()"></div>`;
+    if(ty==="nap") h+=`<div class="field"><label>${t("napEnd")} <span style="text-transform:none;font-weight:600">${t("stillSleeping")}</span></label><input type="datetime-local" id="endIn" value="${fs.end?toLocalInput(fs.end):""}" onchange="fs.end=this.value?new Date(this.value).getTime():null"></div>`;
+  }
+  h+=`<div class="row"><button class="btn ghost" onclick="closeModal()">${t("cancel")}</button><button class="btn ${isNew?"amber":"green"}" onclick="saveEntry()">${isNew?t("logFeeding"):t("save")}</button></div>`;
+  openModal(h);
+}
+function saveEntry(){
+  const ty=fs.type; let data={};
+  if(ty==="feed"){ data.src=fs.src; if(fs.src==="breast"){ if(fs.side)data.side=fs.side; } else { data.milk=fs.milk; if(fs.ml)data.ml=fs.ml; } }
+  if(ty==="pee"&&fs.amount)data.amount=fs.amount;
+  if(ty==="poop"){ if(fs.consistency)data.consistency=fs.consistency; if(fs.color)data.color=fs.color; }
+  if(ty==="note"){ data.text=document.getElementById("noteEdit").value.trim(); if(!data.text)return; }
+  const ts=fs.ts||Date.now();
+  if(fs.mode==="new"){ mutEvent({id:uuid(),baby:fs.baby,type:"feed",ts,end:null,data}); toast(`🍼 ${t("evFeed")} · ${fmtTime(ts)} ✓`); }
+  else { const old=events.find(x=>x.id===fs.id); mutEvent({...old,ts,end:ty==="nap"?(fs.end||null):old.end,data}); toast("✓ "+t("saved")); }
+  closeModal();
+}
+
+/* ---------- feeding timer ---------- */
+let tm=null;
+function openTimer(){ tm={iv:iv(babyIdx),both:true,at:null}; renderTimer(); }
+function setTm(k,v){tm[k]=v;renderTimer();}
+function renderTimer(){
+  const opts=[120,150,180,210,240];
+  openModal(`<h3>⏰ ${t("timerTitle")} · ${esc(name(babyIdx))}</h3>
+   <div class="field"><label>${t("every")}</label><div class="chips">${opts.map(m=>`<button class="chip ${tm.iv===m?"on":""}" onclick="setTm('iv',${m})">${m/60}${t("hours")}</button>`).join("")}</div>
+   <input type="number" inputmode="numeric" style="margin-top:10px" placeholder="${t("custom")}" value="${opts.includes(tm.iv)?"":tm.iv}" oninput="tm.iv=Number(this.value)||tm.iv"></div>
+   <div class="field"><label><input type="checkbox" ${tm.both?"checked":""} onchange="tm.both=this.checked" style="width:auto;margin-right:8px">${t("applyBoth")}</label></div>
+   <div class="field"><label>${t("specific")}</label><input type="time" id="atIn" value="${tm.at||""}" onchange="tm.at=this.value"></div>
+   <div class="row"><button class="btn ghost" onclick="clearOverride()">${t("resetOne")}</button><button class="btn green" onclick="saveTimer()">${t("save")}</button></div>`);
+}
+function saveTimer(){
+  const v=Math.max(30,Math.min(720,Math.round(tm.iv)||180));
+  settings.intervals=settings.intervals||[180,180];
+  settings.intervals[babyIdx]=v; if(tm.both)settings.intervals=[v,v];
+  const at=document.getElementById("atIn").value;
+  if(at){ const d=new Date(); const [h,m]=at.split(":").map(Number); d.setHours(h,m,0,0); if(d.getTime()<Date.now()-30*MIN)d.setDate(d.getDate()+1);
+    settings.nextOverride=settings.nextOverride||{}; settings.nextOverride[babyIdx]={ts:d.getTime(),setAt:Date.now()}; }
+  persistSettings(); closeModal(); render();
+}
+function clearOverride(){ if(settings.nextOverride)delete settings.nextOverride[babyIdx]; persistSettings(); closeModal(); render(); }
+
+/* ---------- settings ---------- */
+function openSettings(first){
+  openModal(`<div id="${first?"noDismiss":"x"}"></div><h3>${first?t("welcome"):t("settings")}</h3>${first?`<p>${t("welcomeSub")}</p>`:""}
+   <div class="field"><label>${t("baby1")}</label><input type="text" id="n0" value="${esc(settings.names[0]==="Baby 1"&&first?"":settings.names[0])}"></div>
+   <div class="field"><label>${t("baby2")}</label><input type="text" id="n1" value="${esc(settings.names[1]==="Baby 2"&&first?"":settings.names[1])}"></div>
+   <div class="row">${first?"":`<button class="btn ghost" onclick="closeModal()">${t("close")}</button>`}<button class="btn green" onclick="saveSettings()">${first?t("start"):t("save")}</button></div>
+   ${sb&&!first?`<div class="row"><button class="btn ghost" onclick="lockDevice()">${t("lockNow")}</button></div>`:""}`);
+}
+function saveSettings(){
+  settings.names=[document.getElementById("n0").value.trim()||"Baby 1",document.getElementById("n1").value.trim()||"Baby 2"]; settings.named=true;
+  persistSettings(); closeModal(); render();
+}
+
+/* ---------- views ---------- */
+function entryRow(e){
+  const txt=dataText(e); let sub="";
+  if(e.type==="nap") sub = e.end? `${t("slept")} ${fmtDur(e.end-e.ts)} · ${fmtTime(e.ts)} → ${fmtTime(e.end)}` : `${t("napRun")} ${fmtTime(e.ts)} · <span data-live="${e.ts}" data-kind="dur">${fmtDur(Date.now()-e.ts)}</span>`;
+  else if(e.type==="note") sub=esc((e.data||{}).text);
+  else sub=esc(txt)||`<span data-live="${e.ts}">${ago(e.ts)}</span>`;
+  const head=`${esc(t(EVKEY[e.type]))} · ${fmtTime(e.ts)}`;
+  return `<li><div class="ic ${e.type}">${ICON[e.type]}</div><div class="m" onclick="openEntry({id:'${e.id}'})"><b>${head}</b><span>${sub}</span></div>
+    <button class="ib" aria-label="${t("edit")}" onclick="openEntry({id:'${e.id}'})">✏️</button>
+    <button class="ib" aria-label="${t("delete")}" onclick="delEvent('${e.id}')">🗑️</button></li>`;
+}
+function homeView(){
+  const today=startOfDay(Date.now());
+  let h=(!SUPABASE_URL?`<div class="banner">ℹ️ Demo mode: data is saved only on this device. Add your Supabase URL/key to sync live between phones.</div>`:"")+`<h2>${t("summary")}</h2><div class="card">`;
+  [0,1].forEach(i=>{
+    const c=counts(dayEvents(i,today)), lf=lastOf(i,"feed");
+    h+=`<div class="sumrow"><span class="dot" style="background:var(--b${i+1})"></span>${esc(name(i))}</div>
+    <div class="sum"><div><span class="e">🍼</span><b>${c.feed}</b><span>${c.ml?c.ml+" ml":t("feedings")}</span></div>
+    <div><span class="e">💧</span><b>${c.pee}</b><span>${t("pees")}</span></div>
+    <div><span class="e">💩</span><b>${c.poop}</b><span>${t("poops")}</span></div>
+    <div><span class="e">😴</span><b>${c.nap}</b><span>${c.sleep?fmtDur(c.sleep):t("naps")}</span></div></div>
+    <div class="last">${t("lastFeed")}: ${lf?`${fmtTime(lf.ts)} · <span data-live="${lf.ts}">${ago(lf.ts)}</span>`:t("none")}</div>${i===0?`<div style="height:12px"></div>`:""}`;
+  });
+  h+=`</div><h2>${t("tapToOpen")}</h2><div class="tiles">`;
+  [0,1].forEach(i=>{
+    const nap=activeNap(i), nx=nextFeedTs(i);
+    h+=`<button class="tile t${i}" onclick="go('baby',${i})"><div class="avatar">👶</div><h3>${esc(name(i))}</h3>
+      ${nap?`<span class="badge">😴 ${t("sleeping")} · <span data-live="${nap.ts}" data-kind="dur">${fmtDur(Date.now()-nap.ts)}</span></span>`:""}
+      <div class="mini">⏰ ${nx?`<span data-live="${nx}" data-kind="next">…</span>`:t("none")}</div></button>`;
+  });
+  return h+`</div>`;
+}
+function dayNav(){
+  const isToday=viewDay===startOfDay(Date.now());
+  const label=isToday?t("today_"):viewDay===startOfDay(Date.now())-DAY?t("yesterday"):new Date(viewDay).toLocaleDateString(loc(),{weekday:"long",month:"short",day:"numeric"});
+  return `<div class="daynav noprint"><button onclick="shiftDay(-1)">‹</button><span>${esc(label)}</span><button onclick="shiftDay(1)" ${isToday?"disabled":""}>›</button></div>`;
+}
+function shiftDay(n){ const nd=startOfDay(viewDay+n*DAY+DAY/2); if(nd>startOfDay(Date.now()))return; viewDay=nd; render(); }
+function babyView(){
+  const i=babyIdx, nap=activeNap(i), nx=nextFeedTs(i);
+  const list=dayEvents(i,viewDay);
+  return `<button class="back" onclick="go('home')">${t("back")}</button>
+  <div class="bhead"><div class="avatar" style="background:var(--b${i+1})">👶</div><h1>${esc(name(i))}</h1></div>
+  <div class="card next"><div><small>${t("nextFeed")}</small>${nx?`<b class="nx" data-live="${nx}" data-kind="next">…</b><span>${t("at")} ${fmtTime(nx)}</span>`:`<span>${t("noFeedYet")}</span>`}</div>
+    <button class="btn ghost" onclick="openTimer()">⏱ ${t("adjust")}</button></div>
+  <div class="big">
+    <button class="bb feed" onclick="openEntry({type:'feed'})"><span class="em">🍼</span>${t("feed")}</button>
+    <button class="bb pee" onclick="quickLog('pee')"><span class="em">💧</span>${t("pee")}</button>
+    <button class="bb poop" onclick="quickLog('poop')"><span class="em">💩</span>${t("poop")}</button>
+    <button class="bb nap ${nap?"run":""}" onclick="toggleNap()"><span class="em">😴</span>${nap?t("wake"):t("startNap")}${nap?`<small data-live="${nap.ts}" data-kind="dur">${fmtDur(Date.now()-nap.ts)}</small>`:""}</button>
+  </div>
+  <h2>${t("notes")}</h2>
+  <div class="card"><div class="noteform"><textarea id="noteText" rows="2" placeholder="${esc(t("notePh"))}"></textarea><button class="btn green" onclick="addNote()">${t("addNote")}</button></div></div>
+  ${dayNav()}
+  ${list.length?`<ul class="tl">${list.map(entryRow).join("")}</ul>`:`<div class="empty card">${t("nothing")}</div>`}`;
+}
+function reportView(){
+  let h=`<div class="noprint" style="display:flex;justify-content:space-between;align-items:center;margin-top:14px"><h2 style="margin:0">${t("reportTitle")}</h2><button class="btn" onclick="window.print()">🖨️ ${t("print")}</button></div>${dayNav()}
+   <div class="report"><h2 style="margin:0;font-size:20px;color:var(--ink);text-transform:none;letter-spacing:0">${t("reportTitle")} — ${fmtDate(viewDay)}</h2>`;
+  [0,1].forEach(i=>{
+    const list=dayEvents(i,viewDay).slice().reverse(), c=counts(list);
+    h+=`<h3>${esc(name(i))}</h3><div class="totals"><span>🍼 ${c.feed}${c.ml?" · "+c.ml+" ml":""}</span><span>💧 ${c.pee}</span><span>💩 ${c.poop}</span><span>😴 ${c.nap}${c.sleep?" · "+fmtDur(c.sleep):""}</span></div>`;
+    h+= list.length? `<table><tr><th>${t("time")}</th><th>${t("entry")}</th><th>${t("details_")}</th></tr>${list.map(e=>{
+      let d=dataText(e); if(e.type==="nap")d=e.end?`${fmtTime(e.ts)} → ${fmtTime(e.end)} (${fmtDur(e.end-e.ts)})`:`${t("sleeping")}`; if(e.type==="note")d=(e.data||{}).text||"";
+      return `<tr><td>${fmtTime(e.ts)}</td><td>${ICON[e.type]} ${esc(t(EVKEY[e.type]))}</td><td>${esc(d)}</td></tr>`;}).join("")}</table>` : `<div class="empty">${t("nothing")}</div>`;
+  });
+  return h+`</div>`;
+}
+/* guides */
+function guidesView(){
+  const sorted=[...guides].sort((a,b)=>(a.created||0)-(b.created||0));
+  if(!gId||!sorted.find(g=>g.id===gId)) gId=sorted[0]&&sorted[0].id;
+  const g=sorted.find(x=>x.id===gId);
+  let h=`<h2>${t("guidesTitle")}</h2><div class="gtabs">${sorted.map(x=>`<button class="${x.id===gId?"on":""}" onclick="selGuide('${x.id}')">${esc(x.title||t("untitled"))}</button>`).join("")}<button class="add" onclick="newGuide()">+ ${t("newGuide")}</button></div>`;
+  if(!g) return h+`<div class="empty card">${t("noGuides")}</div>`;
+  const nb='onmousedown="event.preventDefault()"';
+  return h+`<div class="card"><div class="ghead"><input type="text" id="gTitle" value="${esc(g.title||"")}" placeholder="${esc(t("guideTitle"))}" oninput="queueSave()">
+   <button class="ib" style="opacity:1" aria-label="${t("deleteGuide")}" onclick="delGuide('${g.id}')">🗑️</button></div>
+   <div class="toolbar">
+     <select onchange="fmtBlock(this.value);this.selectedIndex=0"><option>${t("p")}…</option><option value="h1">${t("h1")}</option><option value="h2">${t("h2")}</option><option value="p">${t("p")}</option></select>
+     <select onchange="fmtSize(this.value);this.selectedIndex=0"><option>Aa</option><option value="2">S</option><option value="3">M</option><option value="5">L</option><option value="6">XL</option></select>
+     <button ${nb} onclick="cmd('bold')"><b>B</b></button><button ${nb} onclick="cmd('italic')"><i>I</i></button><button ${nb} onclick="cmd('underline')"><u>U</u></button>
+     <button ${nb} onclick="cmd('insertUnorderedList')">•≡</button><button ${nb} onclick="cmd('insertOrderedList')">1.≡</button>
+     <button ${nb} onclick="cmd('justifyLeft')">⇤</button><button ${nb} onclick="cmd('justifyCenter')">↔</button>
+     <input type="color" value="#23213a" onchange="cmd('foreColor',this.value)"><input type="color" value="#fff3a3" onchange="cmd('hiliteColor',this.value)">
+     <button ${nb} onclick="cmd('removeFormat')">⌫ Tx</button></div>
+   <div class="editor" id="editor" contenteditable="true" oninput="queueSave()" onfocus="editorFocused=true" onblur="editorFocused=false;saveGuideNow()">${g.html||""}</div>
+   <div class="saved" id="gSaved"></div></div>`;
+}
+function cmd(c,v){document.execCommand(c,false,v||null);queueSave();}
+function fmtBlock(v){if(["h1","h2","p"].includes(v))document.execCommand("formatBlock",false,v);queueSave();}
+function fmtSize(v){if(+v)document.execCommand("fontSize",false,v);queueSave();}
+function selGuide(id){saveGuideNow();gId=id;render();}
+function newGuide(){ const g={id:uuid(),title:"",html:"",created:Date.now()}; gId=g.id; mutGuide(g); render(); setTimeout(()=>{const x=document.getElementById("gTitle");x&&x.focus();},50); }
+function queueSave(){const s=document.getElementById("gSaved");if(s)s.textContent=t("saving");clearTimeout(gSaveTimer);gSaveTimer=setTimeout(saveGuideNow,900);}
+function saveGuideNow(){
+  clearTimeout(gSaveTimer);
+  const ed=document.getElementById("editor"), ti=document.getElementById("gTitle"); if(!ed||!ti||!gId)return;
+  const g=guides.find(x=>x.id===gId); if(!g||(g.html===ed.innerHTML&&g.title===ti.value))return;
+  mutGuide({...g,html:ed.innerHTML,title:ti.value});
+  const s=document.getElementById("gSaved"); if(s)s.textContent=t("saved");
+}
+function delGuide(id){askDelete(t("deleteGuideQ"),t("deleteSub"),()=>{removeGuide(id);gId=null;render();});}
+
+/* ---------- render ---------- */
+function render(){
+  if(view==="guides"&&editorFocused)return;
+  const app=document.getElementById("app");
+  const ta=document.getElementById("noteText"), draft=ta&&ta.value, had=ta&&document.activeElement===ta;
+  app.innerHTML = view==="home"?homeView() : view==="baby"?babyView() : view==="report"?reportView() : guidesView();
+  if(draft){const n=document.getElementById("noteText");if(n){n.value=draft;if(had)n.focus();}}
+  document.getElementById("navHome").classList.toggle("on",view==="home"||view==="baby");
+  document.getElementById("navGuides").classList.toggle("on",view==="guides");
+  document.getElementById("navReport").classList.toggle("on",view==="report");
+  document.querySelectorAll("[data-live]").forEach(liveText);
+}
+
+/* ---------- start ---------- */
+(async function init(){
+  document.documentElement.lang=lang; applyStatic(); tick();
+  if(!SUPABASE_URL){ loadLocal(); setSync("demo"); ready=true; render(); if(!settings.named)openSettings(true); return; }
+  sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+  const {data:{session}}=await sb.auth.getSession();
+  if(session) startRemote(); else document.getElementById("lock").classList.add("show");
+  sb.auth.onAuthStateChange(ev=>{ if(ev==="SIGNED_OUT")document.getElementById("lock").classList.add("show"); });
+})();
+</script>
+</body>
+</html>
